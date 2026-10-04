@@ -1,0 +1,14 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend development plugin for Occupify services, API endpoints, database, and authentication.",
+  "author": {
+    "name": "Occupify Team"
+  },
+  "keywords": [
+    "backend",
+    "api",
+    "database",
+    "services"
+  ]
+}

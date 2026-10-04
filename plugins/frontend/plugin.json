@@ -1,0 +1,15 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "Frontend development plugin for Occupify web application (React, Vite tooling, UI/UX, state management).",
+  "author": {
+    "name": "Occupify Team"
+  },
+  "keywords": [
+    "react",
+    "vite",
+    "frontend",
+    "typescript",
+    "ui"
+  ]
+}

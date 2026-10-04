@@ -1,0 +1,66 @@
+{
+  "$schema": "https://antigravity.google/schemas/agent-skill-config.v1.json",
+  "name": "deprecation-audit",
+  "version": "1.0.0",
+  "description": "Automated third-party API deprecation scanning, official documentation verification, and active replacement consultation.",
+  "type": "audit-skill",
+  "triggers": {
+    "intent": [
+      "scan_deprecations",
+      "audit_library_apis",
+      "verify_deprecated_symbols",
+      "fix_deprecation_warnings"
+    ],
+    "keywords": [
+      "deprecated",
+      "@deprecated",
+      "deprecation",
+      "outdated api",
+      "obsolete symbol",
+      "phosphor icons deprecated",
+      "scan:deprecations"
+    ],
+    "file_patterns": [
+      "src/**/*.tsx",
+      "src/**/*.ts",
+      "scripts/scan-deprecations.ts"
+    ]
+  },
+  "agents": {
+    "DeprecationAuditorAgent": {
+      "role": "API Deprecation Auditor & Migration Specialist",
+      "description": "Audits TypeScript codebase for @deprecated symbols, verifies active replacements on official portals, and updates code safely.",
+      "tools": [
+        "run_command",
+        "view_file",
+        "search_web",
+        "replace_file_content"
+      ],
+      "expertise": [
+        "TypeScript Compiler AST Inspection",
+        "Official Library Documentation Verification",
+        "Zero-Guess Code Remediation",
+        "CI/CD Quality Gatekeeping"
+      ]
+    }
+  },
+  "source_hierarchy": {
+    "tier_1_official": {
+      "priority": 1,
+      "allowed": true,
+      "sources": [
+        "phosphoricons.com",
+        "react.dev",
+        "tanstack.com",
+        "github.com/phosphor-icons/core",
+        "github.com/phosphor-icons/react",
+        "installed node_modules declaration files (*.d.ts)"
+      ]
+    },
+    "tier_2_untrusted": {
+      "priority": 2,
+      "allowed": false,
+      "description": "Outdated tutorial blogs, unverified AI guesses, obsolete StackOverflow answers."
+    }
+  }
+}

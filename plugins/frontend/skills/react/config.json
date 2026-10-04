@@ -1,0 +1,151 @@
+{
+  "$schema": "https://antigravity.google/schemas/agent-skill-config.v1.json",
+  "name": "react",
+  "version": "1.0.0",
+  "description": "Production React + Vite architecture and design pattern consultation skill enforcing modern feature-driven modularity, type-safe tooling, compound component patterns, state taxonomy, and bundle optimization.",
+  "type": "architecture-skill",
+  "triggers": {
+    "intent": [
+      "react_vite_scaffolding",
+      "project_architecture_consultation",
+      "design_pattern_selection",
+      "state_management_strategy",
+      "vite_tooling_configuration",
+      "component_composition_review",
+      "performance_optimization_audit"
+    ],
+    "keywords": [
+      "react",
+      "vite",
+      "vite.config",
+      "design pattern",
+      "compound component",
+      "headless ui",
+      "bulletproof react",
+      "tanstack query",
+      "zustand",
+      "state management",
+      "code splitting",
+      "manualchunks",
+      "path alias",
+      "custom hooks"
+    ],
+    "file_patterns": [
+      "src/**/*.tsx",
+      "src/**/*.ts",
+      "vite.config.ts",
+      "vite.config.js",
+      "tsconfig.json",
+      "package.json"
+    ]
+  },
+  "agents": {
+    "react-tech-lead": {
+      "role": "Lead Frontend Architect & Squad Orchestrator",
+      "definition": ".agents/agents/react-tech-lead.md",
+      "model": "pro",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "grep_search", "list_dir"]
+    },
+    "react-core-dev": {
+      "role": "Core Logic & State Developer",
+      "definition": ".agents/agents/react-core-dev.md",
+      "model": "pro",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "multi_replace_file_content", "grep_search", "list_dir"]
+    },
+    "react-ui-dev": {
+      "role": "UI & Design System Developer",
+      "definition": ".agents/agents/react-ui-dev.md",
+      "model": "flash",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "multi_replace_file_content", "grep_search", "list_dir"]
+    },
+    "react-static-auditor": {
+      "role": "Static Code Quality & Antipattern Auditor",
+      "definition": ".agents/agents/react-static-auditor.md",
+      "model": "pro",
+      "tools": ["view_file", "grep_search", "run_command", "list_dir"]
+    },
+    "react-e2e-tester": {
+      "role": "Dynamic QA & Accessibility Tester",
+      "definition": ".agents/agents/react-e2e-tester.md",
+      "model": "flash",
+      "tools": ["browser_subagent", "run_command", "view_file", "list_dir"]
+    },
+    "product-researcher-ba": {
+      "role": "Product Owner & Market Research Specialist",
+      "definition": ".agents/agents/product-researcher-ba.md",
+      "model": "pro",
+      "tools": ["search_web", "read_url_content", "view_file", "write_to_file", "list_dir"]
+    }
+  },
+  "orchestration": {
+    "protocol": "multi_agent_squad_pipeline",
+    "dual_qa_signoff_mandatory": true,
+    "min_reviewers": 2,
+    "deliberation_max_cycles": 2,
+    "phases": [
+      "MARKET_AND_REQUIREMENTS_RESEARCH",
+      "ARCHITECTURE_AND_TASK_DECOMPOSITION",
+      "PARALLEL_CORE_AND_UI_DEVELOPMENT",
+      "INDEPENDENT_DUAL_QA_AUDIT",
+      "TECH_LEAD_SIGNOFF_AND_DELIVERY"
+    ]
+  },
+  "source_hierarchy": {
+    "tier_1_authoritative": {
+      "priority": 1,
+      "allowed": true,
+      "sources": [
+        "react.dev",
+        "vite.dev",
+        "patterns.dev",
+        "tanstack.com/query",
+        "github.com/pmndrs/zustand"
+      ]
+    },
+    "tier_2_community_standards": {
+      "priority": 2,
+      "allowed": true,
+      "sources": [
+        "github.com/alan2207/bulletproof-react",
+        "kentcdodds.com/blog",
+        "tkdodo.eu/blog"
+      ]
+    },
+    "tier_3_untrusted": {
+      "priority": 3,
+      "allowed": false,
+      "description": "Outdated CRA blogs, legacy class-component guides, unverified code aggregators."
+    }
+  },
+  "policies": {
+    "architecture_enforcement": {
+      "pattern": "feature_based_modularity",
+      "colocation_enforced": true,
+      "public_boundary_enforced": true
+    },
+    "state_taxonomy": {
+      "server_state": "tanstack_query",
+      "client_global_state": "zustand",
+      "url_state": "nuqs_or_search_params",
+      "local_ui_state": "use_state_or_use_reducer"
+    },
+    "code_hygiene": {
+      "strict_typescript": true,
+      "no_mega_props": true,
+      "no_derived_state_in_use_effect": true,
+      "a11y_first": true
+    },
+    "dumb_data_isolation": {
+      "types_pure_only": true,
+      "mock_data_in_api_only": true,
+      "no_runtime_constants_in_types": true,
+      "no_mock_data_in_components": true
+    },
+    "dual_agent_verification": {
+      "mandatory": true,
+      "min_agents": 2,
+      "roles": ["react-static-auditor", "react-e2e-tester"],
+      "dual_signoff_required": true
+    }
+  }
+}
