@@ -51,6 +51,16 @@ Tech Lead, please lead the implementation of the Job Filter feature:
 - `@react-static-auditor`: Static analysis, linting, dumb data isolation enforcement, zero deprecation checks.
 - `@product-researcher-ba`: Market & competitor research, PRD authoring, Gherkin acceptance criteria.
 
+### 🔹 Available Personas in Backend Plugin
+- `@spring-tech-lead`: Lead Backend Architect and Squad Orchestrator. Microservice boundaries, OpenAPI contracts, and TDD delegation.
+- `@spring-core-dev`: Core domain logic, Spring Data JPA repositories, transactions, Redis caching, RabbitMQ producers.
+- `@api-gateway-dev`: REST/WebFlux controllers, ResponseFactory, @Authenticated argument resolvers, Gateway filters.
+- `@backend-qa-tester`: Test-Driven Development, slice tests (@WebMvcTest, @DataJpaTest), Mockito boundaries.
+- `@backend-quality-auditor`: OWASP security auditing, BaseException hierarchy compliance, unified response gatekeeping.
+
+### 🔹 Available Personas in DevOps Plugin
+- `@devops-engineer`: Docker multi-stage builds, root Docker Compose orchestration, and GitHub Actions CI pipelines.
+
 ---
 
 ## 3. Directory Architecture
@@ -83,11 +93,27 @@ The system is structured as modular **Antigravity Customization Elements & Plugi
     │   └── rules/               # Frontend-specific rule sets
     │       └── .gitkeep
     │
-    └── backend/                 # 🚀 Backend Plugin (Services, Database, API)
-        ├── plugin.json          # Plugin manifest (ready for future backend services)
-        ├── skills/              # Backend skills (NestJS, Go, PostgreSQL, etc.)
-        ├── agents/              # Backend personas (Backend Tech Lead, DB Admin, etc.)
-        └── rules/               # Backend coding standards
+    ├── backend/                 # 🚀 Backend Plugin (Spring Boot 3 + Java 21 Microservices)
+    │   ├── plugin.json          # Plugin manifest
+    │   ├── skills/              # Comprehensive backend architecture skill
+    │   │   └── spring-boot/     # Master Spring Boot skill (Clean Architecture, ResponseFactory, Sequential Flyway, RabbitMQ, Slice Testing)
+    │   ├── agents/              # Domain-specific backend personas
+    │   │   ├── spring-tech-lead.md
+    │   │   ├── spring-core-dev.md
+    │   │   ├── api-gateway-dev.md
+    │   │   ├── backend-qa-tester.md
+    │   │   └── backend-quality-auditor.md
+    │   └── rules/               # Backend coding standards
+    │       └── .gitkeep
+    │
+    └── devops/                  # 🛠️ DevOps Plugin (Containers, Compose & CI/CD)
+        ├── plugin.json          # Plugin manifest
+        ├── skills/              # Comprehensive DevOps & infrastructure skill
+        │   └── devops/          # Master DevOps skill (Layertools Docker, Compose Ports 5530-5534, GitHub Actions CI)
+        ├── agents/              # Infrastructure personas
+        │   └── devops-engineer.md
+        └── rules/
+            └── .gitkeep
 ```
 
 ---

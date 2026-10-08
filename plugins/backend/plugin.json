@@ -1,14 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend development plugin for Occupify services, API endpoints, database, and authentication.",
+  "description": "Backend development plugin for Occupify microservices (Spring Boot 3, Java 21, PostgreSQL, RabbitMQ, Redis, Flyway).",
   "author": {
     "name": "Occupify Team"
   },
   "keywords": [
     "backend",
-    "api",
-    "database",
-    "services"
+    "spring-boot",
+    "java",
+    "microservices",
+    "postgresql",
+    "flyway",
+    "rabbitmq",
+    "redis",
+    "api"
   ]
 }

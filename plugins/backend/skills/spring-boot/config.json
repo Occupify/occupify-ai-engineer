@@ -1,0 +1,167 @@
+{
+  "$schema": "https://antigravity.google/schemas/agent-skill-config.v1.json",
+  "name": "spring-boot",
+  "version": "1.0.0",
+  "description": "Production Spring Boot 3 + Java 21 microservice architecture skill enforcing layered clean architecture, standardized DTOs (ResponseFactory envelopes), strictly sequential Flyway migrations (V1__, V2__, V3__ increment numbers), resilient RabbitMQ event messaging with DLX/DLQ, Spring Cloud Gateway JWT security (@Authenticated context), and slice testing with a zero-failure build gate.",
+  "type": "architecture-skill",
+  "triggers": {
+    "intent": [
+      "spring_boot_scaffolding",
+      "microservice_architecture_consultation",
+      "flyway_migration_design",
+      "api_contract_and_dto_design",
+      "rabbitmq_messaging_integration",
+      "spring_security_and_gateway_review",
+      "backend_test_slice_implementation",
+      "code_quality_and_antipattern_audit"
+    ],
+    "keywords": [
+      "spring",
+      "spring-boot",
+      "spring boot 3",
+      "java 21",
+      "flyway",
+      "migration",
+      "rabbitmq",
+      "postgresql",
+      "jpa",
+      "responsefactory",
+      "singleresponse",
+      "createdresponse",
+      "pageresponse",
+      "errorresponse",
+      "abstractbasecontroller",
+      "baseexception",
+      "mapstruct",
+      "webmvctest",
+      "datajpatest",
+      "microservice",
+      "gateway",
+      "jwt",
+      "dlq",
+      "dlx"
+    ],
+    "file_patterns": [
+      "pom.xml",
+      "src/main/java/**/*.java",
+      "src/test/java/**/*.java",
+      "src/main/resources/**/*.yml",
+      "src/main/resources/**/*.yaml",
+      "src/main/resources/db/migration/*.sql"
+    ]
+  },
+  "agents": {
+    "spring-tech-lead": {
+      "role": "Backend Lead Architect & Squad Orchestrator",
+      "definition": "plugins/backend/agents/spring-tech-lead.md",
+      "model": "pro",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "run_command", "search_web", "read_url_content"]
+    },
+    "spring-core-dev": {
+      "role": "Core Domain & Service Developer",
+      "definition": "plugins/backend/agents/spring-core-dev.md",
+      "model": "pro",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "run_command"]
+    },
+    "api-gateway-dev": {
+      "role": "API Gateway, Routing & Security Developer",
+      "definition": "plugins/backend/agents/api-gateway-dev.md",
+      "model": "pro",
+      "tools": ["view_file", "write_to_file", "replace_file_content", "run_command"]
+    },
+    "backend-quality-auditor": {
+      "role": "Backend Static Code & Architecture Auditor",
+      "definition": "plugins/backend/agents/backend-quality-auditor.md",
+      "model": "pro",
+      "tools": ["view_file", "run_command"]
+    },
+    "backend-qa-tester": {
+      "role": "Backend Test Automation & Verification Engineer",
+      "definition": "plugins/backend/agents/backend-qa-tester.md",
+      "model": "flash",
+      "tools": ["run_command", "view_file"]
+    }
+  },
+  "orchestration": {
+    "protocol": "multi_agent_squad_pipeline",
+    "dual_qa_signoff_mandatory": true,
+    "min_reviewers": 2,
+    "deliberation_max_cycles": 2,
+    "phases": [
+      "ARCHITECTURE_AND_CONTRACT_DESIGN",
+      "DATABASE_MIGRATION_DESIGN",
+      "PARALLEL_CORE_AND_GATEWAY_DEVELOPMENT",
+      "INDEPENDENT_DUAL_QA_AUDIT",
+      "TECH_LEAD_SIGNOFF_AND_DELIVERY"
+    ]
+  },
+  "source_hierarchy": {
+    "tier_1_authoritative": {
+      "priority": 1,
+      "allowed": true,
+      "sources": [
+        "spring.io",
+        "docs.spring.io/spring-boot/docs",
+        "flywaydb.org/documentation",
+        "rabbitmq.com/tutorials",
+        "postgresql.org/docs"
+      ]
+    },
+    "tier_2_community_standards": {
+      "priority": 2,
+      "allowed": true,
+      "sources": [
+        "baeldung.com",
+        "vladmihalcea.com",
+        "reflectoring.io",
+        "maciejwalkowiak.com"
+      ]
+    },
+    "tier_3_untrusted": {
+      "priority": 3,
+      "allowed": false,
+      "description": "Legacy Spring 4/5 XML configurations, outdated StackOverflow posts using deprecated annotations, unverified blog aggregators."
+    }
+  },
+  "policies": {
+    "architecture_enforcement": {
+      "pattern": "layered_clean_architecture",
+      "layers": ["controller", "service", "repository", "dto", "mapper", "exception", "constant", "config", "event"],
+      "controller_no_business_logic": true,
+      "service_transaction_boundary": true
+    },
+    "api_contract_standards": {
+      "response_wrapper": "ResponseFactory",
+      "dto_immutable_records": true,
+      "validation_jakarta_enforced": true
+    },
+    "flyway_migration_discipline": {
+      "versioning_strategy": "strictly_sequential_increment",
+      "allowed_prefix_pattern": "^V[0-9]+__[a-z0-9_]+\\.sql$",
+      "timestamp_versioning_strictly_prohibited": true,
+      "non_destructive_expand_contract": true
+    },
+    "messaging_resilience": {
+      "broker": "rabbitmq",
+      "dlx_dlq_topology": true,
+      "consumer_idempotency_enforced": true,
+      "correlation_id_propagation": true
+    },
+    "security_standards": {
+      "gateway_edge_authentication": true,
+      "user_context_via_authenticated_resolver": true,
+      "no_direct_db_crossing": true
+    },
+    "testing_standards": {
+      "slice_testing_enforced": true,
+      "zero_test_failure_build_gate": true,
+      "verify_command": "./mvnw clean test"
+    },
+    "dual_agent_verification": {
+      "mandatory": true,
+      "min_agents": 2,
+      "roles": ["backend-quality-auditor", "backend-qa-tester"],
+      "dual_signoff_required": true
+    }
+  }
+}
