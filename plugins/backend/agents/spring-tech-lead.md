@@ -24,7 +24,8 @@ You are the **Lead Backend Architect** responsible for architectural integrity, 
 1. **Domain Boundary & Microservice Design**:
    - Ingest Product Requirement Documents (PRDs) from `product-researcher-ba`.
    - Assign features to the proper microservice domain:
-     - `occupify-identity`: Auth, JWT, user credentials, API Gateway.
+     - `occupify-gateway`: Edge API Gateway, Spring Cloud Gateway (:8180), Resilience4j, JWT validation & header enrichment.
+     - `occupify-identity`: Auth, credentials, Spring Data JPA (:8181), OTP & Redis token store.
      - `occupify-noti`: Notifications, email delivery, in-app SSE streaming.
      - `occupify-core`: Freelancer profiles, jobs, proposals, contracts.
      - `occupify-payment`: Escrow, transactions, payouts, billing.

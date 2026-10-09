@@ -52,6 +52,11 @@ When advising on or generating code for Spring Boot microservices, agents must a
      - Pure unit tests with Mockito for Service domain logic.
    - `./mvnw clean test` MUST pass 100% with 0 failures before any code is marked as complete.
 
+8. **Fault Tolerance & Defense-in-Depth Resilience**:
+   - Ingress Gateway: All downstream routes must declare Spring Cloud Gateway `Retry` (restricted to idempotent `GET`, `HEAD` with exponential backoff on 502/503/504) and Resilience4j `CircuitBreaker` with fallback forwarding. Tripped requests must return standard `ErrorResponse` (HTTP 503 `SYS_008` / HTTP 504 `SYS_009`).
+   - Microservices: Direct inter-service HTTP calls must enforce Resilience4j `@CircuitBreaker` and `@Retry`. Third-party APIs must use bulkhead thread isolation.
+   - Consumers: RabbitMQ listeners must configure container retry with exponential backoff and route unrecoverable failures to DLX/DLQ.
+
 ---
 
 ## 2. Prohibited Antipatterns & Enforced Alternatives
@@ -70,6 +75,7 @@ When advising on or generating code for Spring Boot microservices, agents must a
 | **10** | **Lombok `@Data` on JPA Entities**<br>Using `@Data` on `@Entity` classes. | Generates `equals()`, `hashCode()`, and `toString()` that evaluate lazy associations, triggering LazyInitializationException or infinite loops. | **Selective Lombok Annotations**:<br>Use `@Getter`, `@Setter`, `@NoArgsConstructor`, `@AllArgsConstructor` on entities. Override `equals` and `hashCode` based solely on business key or ID. |
 | **11** | **Bypassing Gateway Identity Headers**<br>Parsing JWT tokens inside every downstream microservice independently. | Duplicates auth code, leaks cryptographic keys, and violates single source of truth for auth verification. | **Central Gateway Verification + `@Authenticated`**:<br>Gateway validates token, forwards `X-User-Id` / `X-User-Role`. Service injects via custom `HandlerMethodArgumentResolver`. |
 | **12** | **Single-Agent Unverified Delivery**<br>Pushing code without running `./mvnw clean test` and multi-agent audit. | Leaves failing tests, broken migrations, or contract regressions undetected until CI pipeline fails. | **Automated Test Gate & Dual-QA Signoff**:<br>Must execute `./mvnw clean test` locally and obtain signoff from `backend-quality-auditor` and `backend-qa-tester`. |
+| **13** | **Unprotected Gateway Routes / Blind Non-Idempotent Retries**<br>Forwarding routes without circuit breakers, or blindly retrying non-idempotent `POST` requests. | Downstream failure cascades into gateway thread exhaustion; retrying `POST` without idempotency causes duplicate charges or records. | **Circuit Breaker + Idempotent Retry**:<br>Declare Resilience4j circuit breaker with fallback on all gateway routes; restrict automatic retry strictly to safe/idempotent methods (`GET`, `HEAD`). |
 
 ---
 

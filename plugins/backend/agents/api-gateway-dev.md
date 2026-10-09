@@ -27,8 +27,14 @@ You are the **API Surface & Gateway Specialist** responsible for clean, secure, 
 
 2. **Security & Authentication Context**:
    - In microservices: resolve authenticated users via custom `@Authenticated UUID userId` argument resolvers parsing `X-User-Id` headers passed from the Gateway.
-   - In Gateway (`occupify-identity`): enforce `AuthenticationGatewayFilter` for JWT validation, role-based checks, and request header enrichment.
+   - In Gateway (`occupify-gateway` on port 8180): enforce `AuthenticationGatewayFilter` for JWT validation, role-based checks, and request header enrichment.
 
 3. **OpenAPI & Scalar Documentation**:
    - Annotate all controller endpoints with `@Operation` and `@Tag`.
    - Ensure the service serves its OpenAPI spec at `/v3/api-docs`.
+
+4. **Fault Tolerance & Route Resilience**:
+   - Configure Spring Cloud Gateway `Retry` filter strictly on idempotent HTTP methods (`GET`, `HEAD`) with exponential backoff on 502/503/504 statuses.
+   - Configure Resilience4j `CircuitBreaker` and `TimeLimiter` filters per downstream route, forwarding tripped requests to `/fallback/{service}`.
+   - Implement unified `GatewayFallbackController` returning standardized `ErrorResponse` (HTTP 503 `SYS_008` / HTTP 504 `SYS_009`) with preserved `correlationId`.
+   - Whitelist `/fallback/**` in `SecurityProperties` to guarantee unhindered fallback delivery without token re-authentication.
