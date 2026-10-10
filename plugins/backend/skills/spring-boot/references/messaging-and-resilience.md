@@ -6,7 +6,7 @@ This reference manual provides architecture specifications and implementation re
 
 ## 1. Event Payload Contracts
 
-All domain events shared across microservices must be defined as immutable Java 21 `record` types containing both metadata headers and business payloads.
+All domain events shared across microservices must be defined as immutable Java 25 `record` types containing both metadata headers and business payloads.
 
 ### 1.1 Base Event Envelope
 

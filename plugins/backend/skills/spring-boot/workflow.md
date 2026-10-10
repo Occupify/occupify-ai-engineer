@@ -1,4 +1,4 @@
-# Spring Boot 3 + Java 21 Consultation Workflow & Execution Protocols
+# Spring Boot 3 + Java 25 Consultation Workflow & Execution Protocols
 
 This document defines the lifecycle phases, state machine transitions, audit rubric, and validation contracts for consulting on, scaffolding, and implementing Spring Boot microservices under `plugins/backend/`.
 
@@ -43,7 +43,7 @@ stateDiagram-v2
 
 ### Phase 2: `CONTRACT_AND_MIGRATION_DESIGN` (`spring-tech-lead`)
 1. **API Contract Formulation**:
-   - Define immutable Java 21 `record` DTOs with `jakarta.validation` constraints in `dto/`.
+   - Define immutable Java 25 `record` DTOs with `jakarta.validation` constraints in `dto/`.
    - Specify endpoint URIs, HTTP verbs, and `ResponseFactory` wrapper types (`SingleResponse`, `CreatedResponse`, `PageResponse`, `SuccessResponse`).
 2. **Flyway Migration Planning**:
    - Inspect existing migration scripts in `src/main/resources/db/migration/`.
@@ -92,7 +92,7 @@ stateDiagram-v2
 | **Migrations** | Sequential increment naming | CRITICAL | Starts with `V{N+1}__`, NO timestamp numbers (`V2026...`). |
 | **Migrations** | Non-destructive DDL | CRITICAL | No immediate `DROP COLUMN` or breaking type alterations. |
 | **API Contract** | Standard Response Envelope | CRITICAL | Uses `ResponseFactory.ok/created/page/error/success`. |
-| **API Contract** | DTO Immutability | MAJOR | Java 21 `record` with `jakarta.validation` annotations. |
+| **API Contract** | DTO Immutability | MAJOR | Java 25 `record` with `jakarta.validation` annotations. |
 | **Architecture** | Layer Separation | CRITICAL | No business logic in `@RestController`; Service holds transactions. |
 | **Architecture** | Entity Hygiene | MAJOR | No `@Data` on JPA entities; explicit `@Getter`, `@Setter`. |
 | **Security** | Identity Propagation | CRITICAL | Gateway token validation; downstream uses `@Authenticated`. |

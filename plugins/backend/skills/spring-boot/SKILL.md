@@ -1,18 +1,18 @@
 ---
 name: spring-boot
-description: Production Spring Boot 3 + Java 21 microservice architecture and engineering consultation skill. Use when architecting enterprise microservices, enforcing layered clean architecture, standardizing DTOs and API responses (ResponseFactory, SingleResponse, CreatedResponse, PageResponse, ErrorResponse), writing deterministic sequential Flyway migrations (strictly V1__, V2__, V3__ increment numbers, never timestamps), designing resilient RabbitMQ event messaging (DLX/DLQ, idempotency), securing microservices with Spring Cloud Gateway and JWT (@Authenticated user context), and validating code with comprehensive slice testing (@WebMvcTest, @DataJpaTest) under a zero-failure build gate (./mvnw clean test).
+description: Production Spring Boot 3 + Java 25 microservice architecture and engineering consultation skill. Use when architecting enterprise microservices, enforcing layered clean architecture, standardizing DTOs and API responses (ResponseFactory, SingleResponse, CreatedResponse, PageResponse, ErrorResponse), writing deterministic sequential Flyway migrations (strictly V1__, V2__, V3__ increment numbers, never timestamps), designing resilient RabbitMQ event messaging (DLX/DLQ, idempotency), securing microservices with Spring Cloud Gateway and JWT (@Authenticated user context), and validating code with comprehensive slice testing (@WebMvcTest, @DataJpaTest) under a zero-failure build gate (./mvnw clean test).
 ---
 
-# Production Spring Boot 3 + Java 21 Microservice Skill
+# Production Spring Boot 3 + Java 25 Microservice Skill
 
-This skill delivers enterprise-grade architecture consultation, design pattern implementation, database evolution safety, and code auditing for modern Spring Boot 3 microservices running on Java 21.
+This skill delivers enterprise-grade architecture consultation, design pattern implementation, database evolution safety, and code auditing for modern Spring Boot 3 microservices running on Java 25.
 
 ## Skill Specifications & Manifests
 
 - **Configuration & Triggers**: [config.json](./config.json)  
   Defines triggers, agent roles (`spring-tech-lead`, `spring-core-dev`, `api-gateway-dev`, `backend-qa-tester`, `backend-quality-auditor`), source hierarchies, and architectural policies.
 - **Architectural Directives & Rules**: [system_prompt.md](./system_prompt.md)  
-  Contains operational directives, strict Java 21 constraints, prohibited antipatterns, and code generation guidelines.
+  Contains operational directives, strict Java 25 constraints, prohibited antipatterns, and code generation guidelines.
 - **Consultation & Execution Protocol**: [workflow.md](./workflow.md)  
   Specifies the 5-phase consultation lifecycle, audit checklist, and verification protocols.
 
@@ -31,7 +31,7 @@ Detailed architectural reference manuals are located in `references/`:
 
 1. **Scope Calibration**: Distinguish between service bootstrapping (minimal scaffolding with pom.xml, health endpoint, base packages) and full business feature implementation. Never generate speculative or unrequested mock tables.
 2. **Architecture Discovery**: Ingest domain requirements, determine service boundaries, define entity relationships, and enforce strict layered separation (Controllers handle HTTP only, Services encapsulate all transactions and business rules).
-3. **API Contract & DTO First**: Define immutable Java 21 `record` DTOs with `jakarta.validation` annotations. Wrap every HTTP response in standard `ResponseFactory` envelopes (`SingleResponse`, `CreatedResponse`, `PageResponse`, `ErrorResponse`).
+3. **API Contract & DTO First**: Define immutable Java 25 `record` DTOs with `jakarta.validation` annotations. Wrap every HTTP response in standard `ResponseFactory` envelopes (`SingleResponse`, `CreatedResponse`, `PageResponse`, `ErrorResponse`).
 4. **Flyway Migration Discipline**: Enforce **strictly sequential increment numbers** (`V1__init_...sql`, `V2__add_...sql`, `V3__...`). Verify that every migration script is non-destructive, uses lowercase snake_case naming, and includes rollback safety considerations.
 5. **Event-Driven Resilience**: When emitting or consuming RabbitMQ events, declare typed payload records, establish DLX/DLQ routing keys, and guarantee consumer idempotency using message unique identifiers.
 6. **Slice Testing & Build Verification**: Write targeted slice tests (`@WebMvcTest` for controllers, `@DataJpaTest` for repositories, plain unit tests for services). Verify that `./mvnw clean test` passes with 100% success before committing.

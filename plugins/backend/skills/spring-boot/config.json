@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/agent-skill-config.v1.json",
   "name": "spring-boot",
   "version": "1.0.0",
-  "description": "Production Spring Boot 3 + Java 21 microservice architecture skill enforcing layered clean architecture, standardized DTOs (ResponseFactory envelopes), strictly sequential Flyway migrations (V1__, V2__, V3__ increment numbers), resilient RabbitMQ event messaging with DLX/DLQ, Spring Cloud Gateway JWT security (@Authenticated context), and slice testing with a zero-failure build gate.",
+  "description": "Production Spring Boot 3 + Java 25 microservice architecture skill enforcing layered clean architecture, standardized DTOs (ResponseFactory envelopes), strictly sequential Flyway migrations (V1__, V2__, V3__ increment numbers), resilient RabbitMQ event messaging with DLX/DLQ, Spring Cloud Gateway JWT security (@Authenticated context), and slice testing with a zero-failure build gate.",
   "type": "architecture-skill",
   "triggers": {
     "intent": [
@@ -19,7 +19,7 @@
       "spring",
       "spring-boot",
       "spring boot 3",
-      "java 21",
+      "java 25",
       "flyway",
       "migration",
       "rabbitmq",

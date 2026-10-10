@@ -1,6 +1,6 @@
 # Microservice Layered Architecture & API Contracts
 
-This reference manual provides architectural standards and implementation guidelines for building resilient, modular Spring Boot 3 microservices on Java 21.
+This reference manual provides architectural standards and implementation guidelines for building resilient, modular Spring Boot 3 microservices on Java 25.
 
 ---
 
@@ -14,8 +14,8 @@ src/main/java/com/occupify/<service>/
 ├── constant/                # Route paths, message keys, queue names, error codes
 ├── controller/              # HTTP controllers (@RestController, inherits AbstractBaseController)
 ├── dto/
-│   ├── request/             # Incoming request contracts (Java 21 records with @Valid)
-│   └── response/            # Outgoing response payloads (Java 21 records)
+│   ├── request/             # Incoming request contracts (Java 25 records with @Valid)
+│   └── response/            # Outgoing response payloads (Java 25 records)
 ├── event/                   # Event schemas, publishers, and RabbitMQ listener records
 ├── exception/               # BaseException, custom domain exceptions, GlobalExceptionHandler
 ├── mapper/                  # MapStruct interfaces (@Mapper(componentModel = "spring"))

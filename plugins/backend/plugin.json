@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend development plugin for Occupify microservices (Spring Boot 3, Java 21, PostgreSQL, RabbitMQ, Redis, Flyway).",
+  "description": "Backend development plugin for Occupify microservices (Spring Boot 3, Java 25, PostgreSQL, RabbitMQ, Redis, Flyway).",
   "author": {
     "name": "Occupify Team"
   },

@@ -93,7 +93,7 @@ The system is structured as modular **Antigravity Customization Elements & Plugi
     │   └── rules/               # Frontend-specific rule sets
     │       └── .gitkeep
     │
-    ├── backend/                 # 🚀 Backend Plugin (Spring Boot 3 + Java 21 Microservices)
+    ├── backend/                 # 🚀 Backend Plugin (Spring Boot 3 + Java 25 Microservices)
     │   ├── plugin.json          # Plugin manifest
     │   ├── skills/              # Comprehensive backend architecture skill
     │   │   └── spring-boot/     # Master Spring Boot skill (Clean Architecture, ResponseFactory, Sequential Flyway, RabbitMQ, Slice Testing)

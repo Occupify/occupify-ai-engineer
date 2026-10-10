@@ -1,4 +1,4 @@
-# Spring Boot 3 + Java 21 Architecture & System Prompts
+# Spring Boot 3 + Java 25 Architecture & System Prompts
 
 This document defines the operational directives, architectural rules, code hygiene standards, and behavioral boundaries for agents consulting under `plugins/backend/`.
 
@@ -30,8 +30,8 @@ When advising on or generating code for Spring Boot microservices, agents must a
    - Always verify the current highest migration number in `src/main/resources/db/migration/` and increment by exactly 1 (`V{N+1}__`).
    - All migrations must be non-destructive (Expand and Contract pattern) and written in lowercase snake_case.
 
-4. **DTO Immutability via Java 21 Records & MapStruct**:
-   - All Request and Response DTOs must be declared as immutable Java 21 `record` types.
+4. **DTO Immutability via Java 25 Records & MapStruct**:
+   - All Request and Response DTOs must be declared as immutable Java 25 `record` types.
    - DTOs must carry `jakarta.validation.constraints` annotations (`@NotBlank`, `@NotNull`, `@Size`, `@Email`, etc.).
    - Entity-to-DTO and DTO-to-Entity conversions must be performed via type-safe MapStruct mappers (`@Mapper(componentModel = "spring")`). Never perform manual repetitive setter mapping in service code.
 
@@ -64,7 +64,7 @@ When advising on or generating code for Spring Boot microservices, agents must a
 | # | Antipattern | Why it is Prohibited | Enforced Production Alternative |
 | :- | :--- | :--- | :--- |
 | **1** | **Timestamp Flyway Migrations**<br>`V20261008120000__create_table.sql` | Causes version ordering drift, merge conflicts, and breaks deterministic deployment sequence across team environments. | **Sequential Increment Versioning**:<br>`V1__create_users_table.sql`, `V2__add_email_index.sql`. Check existing `V{N}` and increment by 1. |
-| **2** | **Raw Entity Exposure in API**<br>`public ResponseEntity<User> getUser(...)` | Leaks internal database schema, sensitive columns (passwords, salts), triggers Jackson infinite recursion on JPA relations. | **Java 21 Record DTO + MapStruct**:<br>`public ResponseEntity<SingleResponse<UserResponse>> getUser(...)` mapped via `@Mapper`. |
+| **2** | **Raw Entity Exposure in API**<br>`public ResponseEntity<User> getUser(...)` | Leaks internal database schema, sensitive columns (passwords, salts), triggers Jackson infinite recursion on JPA relations. | **Java 25 Record DTO + MapStruct**:<br>`public ResponseEntity<SingleResponse<UserResponse>> getUser(...)` mapped via `@Mapper`. |
 | **3** | **Unwrapped API Responses**<br>`return ResponseEntity.ok(userDto);` | Inconsistent client response envelope; frontend cannot rely on unified status codes, timestamps, and message envelopes. | **ResponseFactory Envelope**:<br>`return ResponseFactory.ok(userResponse, "User retrieved successfully");` |
 | **4** | **Business Logic in Controllers**<br>Writing validation, calculations, or entity mutations in `@RestController`. | Violates Single Responsibility, hinders unit testability, and prevents reusing logic across channels (e.g. messaging, CLI). | **Service Layer Encapsulation**:<br>Controller delegates entirely to `@Service`. Controller only handles HTTP protocol and DTO validation. |
 | **5** | **Direct Cross-Service Database Access**<br>Microservice A connecting directly to Microservice B's database. | Breaks bounded contexts, causes tight coupling, and corrupts independent deployment capabilities. | **API Gateway / RabbitMQ Events**:<br>Communicate asynchronously via RabbitMQ topic exchanges or synchronously via REST through Gateway. |
@@ -127,7 +127,7 @@ public class PropertyController extends AbstractBaseController {
 }
 ```
 
-### 4.2 DTO Contracts (Java 21 Records)
+### 4.2 DTO Contracts (Java 25 Records)
 ```java
 public record CreatePropertyRequest(
     @NotBlank(message = "Title is required")
@@ -194,7 +194,7 @@ CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
 Before certifying any backend change:
 - [ ] Are all Flyway migrations named using **sequential increment numbers** (`V1__`, `V2__`, `V3__`)? Verify NO timestamps exist.
 - [ ] Are all controller responses wrapped in `ResponseFactory` (`SingleResponse`, `CreatedResponse`, `PageResponse`, `ErrorResponse`)?
-- [ ] Are all DTOs implemented as immutable Java 21 `record`s with `jakarta.validation` annotations?
+- [ ] Are all DTOs implemented as immutable Java 25 `record`s with `jakarta.validation` annotations?
 - [ ] Are entities annotated with `@Getter`, `@Setter`, `@NoArgsConstructor` instead of `@Data`?
 - [ ] Are read operations marked `@Transactional(readOnly = true)` and write operations marked `@Transactional`?
 - [ ] Are RabbitMQ consumers protected with idempotency checks and bound to DLX/DLQ?
