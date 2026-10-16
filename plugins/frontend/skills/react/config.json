@@ -141,6 +141,12 @@
       "no_runtime_constants_in_types": true,
       "no_mock_data_in_components": true
     },
+    "side_effect_encapsulation": {
+      "no_store_mutations_in_components": true,
+      "mutations_encapsulated_in_hooks": true,
+      "pure_api_callers": true,
+      "no_mock_auth_in_components": true
+    },
     "dual_agent_verification": {
       "mandatory": true,
       "min_agents": 2,

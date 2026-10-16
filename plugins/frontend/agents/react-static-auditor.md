@@ -33,6 +33,9 @@ You are the **Lead Code Quality & Static Analysis Auditor** for the Occupify web
    - **Mega-Props**: Flag components that take 8+ disjointed configuration props instead of using children/slots.
    - **Unguarded Compound Context**: Verify that every `useContext` hook in compound components throws an error when called outside its Provider.
    - **Design Token Violation**: Grep for arbitrary Tailwind values (`bg-[#...]`, `text-[...px]`, `p-[...px]`). Require semantic design tokens.
+   - **Direct Store Mutations in UI Components**: Flag any UI component in `components/` importing client stores (e.g. `useAuthStore`) to call action setters (`setTokens`, `clearTokens`). Must be encapsulated in mutation hooks.
+   - **Mock Auth / Token Leakage**: Flag any UI component importing `MOCK_AUTH_TOKENS` or mock auth payloads in click handlers.
+   - **Side-Effects in Pure API Callers**: Flag any caller in `api/` directly mutating client stores.
 
 4. **Zod Schema & API Hygiene**:
    - Verify that all API endpoints defined in `src/features/<feature>/api/` define and parse responses using Zod schemas.
@@ -58,6 +61,8 @@ Before issuing an audit verdict, execute this checklist:
 | **7. Derived State** | React hooks | No `useEffect` + `setState` syncing derived state. | `[ ]` |
 | **8. Zero Deprecation** | Dependencies | Zero `@deprecated` symbols from installed packages. | `[ ]` |
 | **9. Type & Lint Cleanliness** | Compiler | `tsc -b` and `oxlint` exit with code 0. | `[ ]` |
+| **10. Side-Effect Encapsulation** | `components/` | Zero store mutations (`setTokens`, `clearTokens`) or mock tokens (`MOCK_AUTH_TOKENS`) in UI components. | `[ ]` |
+| **11. Pure API Callers** | `features/*/api/` | Zero client store mutations inside async API caller functions. | `[ ]` |
 
 ---
 

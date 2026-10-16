@@ -67,6 +67,7 @@ An independent dual-agent audit performed before user delivery:
 - [ ] **Design Token Guardian**: Zero arbitrary Tailwind values (`[#...]`, `[...px]`).
 - [ ] **Public Boundary Gatekeeper**: No external imports pierce internal feature subdirectories; only consumed via feature `index.ts`.
 - [ ] **Context Safety**: All compound subcomponents call a custom hook that checks for null context.
+- [ ] **Side-Effect & Mock Encapsulation**: Zero store mutations in UI components; zero mock token/credential leaks in components; API callers remain pure.
 - [ ] **TDD Green Suite**: 100% pass rate in Vitest automated tests without modifying test files.
 - [ ] **Visual Layout Integrity**: No horizontal scroll overflow at 375px mobile viewport; clear `:focus-visible` rings.
 - [ ] **Chaos Resilience**: Graceful handling of long strings, double-click spam, and simulated HTTP 500.
@@ -88,6 +89,7 @@ Render the complete architecture, configuration file, or component implementatio
 | Checkpoint | Target | Pass Condition | Failure Action |
 | :--- | :--- | :--- | :--- |
 | **Dumb Data Isolation** | Feature structure | `types/` contains 100% pure types. All dumb/mock data (`MOCK_*`) and mock callers reside in `api/`. Components do not hardcode mock lists. | Move mock datasets from `types/` or `components/` into `api/`. |
+| **Side-Effect Encapsulation** | State & Hooks | Store mutations (e.g. `setTokens`, `clearTokens`) and token caching reside strictly inside mutation hooks (`onSuccess`/`onSettled`). UI components never call store setters; API callers are pure without store mutations. | Move store mutations and token caching from UI components or API callers into custom mutation hooks. |
 | **Dual-Agent Sign-off** | Review Protocol | At least 2 distinct agent roles (`ReactArchitectAgent` + `PatternAuditorAgent`) verified the solution. | Trigger independent auditor review. |
 | **Scope Restraint** | Workspace Init | Only skeleton, `.gitkeep`, sample configs (`router`, `env`), and sample `home.tsx` created. | Remove premature mock feature code. |
 | **Deprecation** | Imports / APIs | Zero `@deprecated` symbols from installed libraries (`@phosphor-icons/react`, React, etc.). | Check official docs / `.d.ts` and replace with active symbol. |

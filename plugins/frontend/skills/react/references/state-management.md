@@ -148,3 +148,65 @@ export function usePropertyFilters() {
   return { city, minPrice, setCity };
 }
 ```
+
+---
+
+## 5. Encapsulated Store Side-Effects & Lifecycle Sync
+
+A severe architectural failure is leaking global client store mutations (such as `setTokens`, `clearTokens`) directly into presentational UI components or into pure API callers.
+
+### ❌ Prohibited Antipattern: Store Mutation in UI Component
+```tsx
+// ❌ WRONG: UI component manually manages auth store side-effects
+export function LoginForm() {
+  const loginMutation = useLogin();
+  const setTokens = useAuthStore((s) => s.setTokens); // ❌ Store setter leaked into UI
+
+  const handleSubmit = async () => {
+    const res = await loginMutation.mutateAsync(creds);
+    setTokens(res.accessToken, res.refreshToken); // ❌ Duplicate side-effect, state desync!
+  };
+}
+```
+
+### ✅ Enforced Production Pattern: Mutation Hook Encapsulation
+Store side-effects must live exclusively in the `onSuccess` or `onSettled` callbacks of custom TanStack Query hooks:
+
+```typescript
+// ✅ CORRECT: src/features/auth/hooks/use-login.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { loginApi } from '../api/login';
+import { useAuthStore } from '@/stores';
+import { AUTH_QUERY_KEYS } from './use-current-user';
+
+export function useLogin() {
+  const queryClient = useQueryClient();
+  const setTokens = useAuthStore((state) => state.setTokens);
+
+  return useMutation({
+    mutationFn: (credentials: LoginCredentials) => loginApi(credentials),
+    onSuccess: (data) => {
+      // ✅ Store mutation & query invalidation encapsulated together
+      setTokens(data.accessToken, data.refreshToken, data.user);
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.all });
+    },
+  });
+}
+```
+
+And the UI component remains 100% dumb and focused purely on presentation:
+
+```tsx
+// ✅ CORRECT: src/features/auth/components/login-form.tsx
+export function LoginForm({ onSuccess }: LoginFormProps) {
+  const loginMutation = useLogin();
+
+  const handleSubmit = async () => {
+    await loginMutation.mutateAsync(creds);
+    onSuccess?.(); // ✅ Zero store awareness in UI!
+  };
+}
+```
+
+### Pure API Caller Isolation
+API caller functions in `src/features/<feature>/api/` must remain pure async HTTP callers. They must never directly invoke client store mutations (e.g. no `useAuthStore.getState().clearTokens()` in `finally` blocks). Store lifecycles belong strictly in mutation hooks.
