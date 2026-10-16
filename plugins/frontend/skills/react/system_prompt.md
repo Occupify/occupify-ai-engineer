@@ -34,6 +34,11 @@ When advising on or generating code for React + Vite projects, agents must adher
    - **`src/features/<feature>/api/`**: The EXCLUSIVE domain for dumb/mock data (`MOCK_*` payloads) and simulated/async API callers (`Promise`-based callers). Dumb data must never bleed into `types/` or `components/`.
    - **`src/features/<feature>/components/`**: Pure visual presentation & event wiring. Never hardcode dumb data lists inside component files; consume them from `api/` or custom hooks.
 
+6. **Encapsulated Store Side-Effects & Clean UI Separation**:
+   - **No Store Mutations in UI Components**: UI components (`src/features/<feature>/components/`, `src/components/`) must NEVER directly mutate client stores (e.g. `useAuthStore` action setters like `setTokens`, `clearTokens`). UI components must remain dumb/presentational: they trigger mutations via TanStack Query custom hooks (`useLogin`, `useSignOut`, etc.) and let hook lifecycle handlers manage store synchronization.
+   - **Pure API Caller Isolation**: Async caller functions in `src/features/<feature>/api/` must remain pure network/mock callers without touching client stores (no `useAuthStore.getState().clearTokens()` in `finally` blocks).
+   - **Zero Mock Auth Leakage into Presentation**: UI components must never import mock tokens (`MOCK_AUTH_TOKENS`) or fake auth credentials in event handlers. Fallbacks or simulated OAuth flows must be encapsulated within dedicated hooks (`useGoogleLogin`) or dev mocks in `api/`.
+
 ---
 
 ## 2. Prohibited Antipatterns & Enforced Alternatives
@@ -52,6 +57,9 @@ When advising on or generating code for React + Vite projects, agents must adher
 | **10** | **Single-Agent Unverified Delivery**<br>Emitting code or refactoring without independent multi-agent review. | Leaves subtle architectural violations, leaked dumb data, or deprecated symbols unflagged. | **Squad Dual-QA Review**:<br>Implementation drafted by Core + UI Devs must be independently audited by `react-static-auditor` and `react-e2e-tester`. |
 | **11** | **Arbitrary Tailwind Values**<br>`className="bg-[#2a75d3] p-[17px] text-[13px]"` | Causes brand inconsistency, breaks dark mode, bloats CSS bundle. | **Design Token Guardian**:<br>Use semantic theme tokens (`bg-primary`, `p-4`, `text-sm`). |
 | **12** | **Unvalidated API JSON Payloads**<br>Trusting API response shapes blindly without runtime schemas. | Causes fatal white-screen crashes when backend changes or returns null fields unexpectedly. | **Zod Schema First**:<br>Validate all API callers in `api/` with `.parse()` or `.safeParse()`. |
+| **13** | **Direct Store Mutation in UI Components**<br>`const setTokens = useAuthStore(...)`<br>`setTokens(data.accessToken...)` inside form submit or button click. | Breaks Dumb Component isolation, duplicates side-effects, bypasses TanStack Query cache invalidation, and causes state desync. | **Mutation Hook Encapsulation**:<br>Encapsulate store updates in `onSuccess`/`onSettled` of TanStack Query mutation hooks (`hooks/use-*.ts`). UI components only invoke `mutation.mutate()`. |
+| **14** | **Mock Token & Credential Leaks in Components**<br>`import { MOCK_AUTH_TOKENS } from '../api'` inside a component to fake OAuth or login. | Leaves debug trash in production UI components, tightly couples presentation to fake tokens, and blocks backend authentication. | **Dedicated Mutation / OAuth Hook**:<br>Encapsulate simulated or real OAuth login in `hooks/use-google-login.ts`. Components only receive `mutateAsync` triggers. |
+| **15** | **Store Mutations in Pure API Callers**<br>`useAuthStore.getState().clearTokens()` inside `finally` block of `api/sign-out.ts`. | Violates pure function predictability, breaks separation of concerns, and causes duplicate store mutations with hooks. | **Pure API Callers + Hook Lifecycle**:<br>Keep API callers pure async HTTP callers; manage store cleanup strictly in `useSignOut` hook (`onSettled`). |
 
 ---
 

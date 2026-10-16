@@ -98,3 +98,5 @@ You are the **Senior React Core Developer** for the Occupify web application. Yo
 3. **No Visual Code**: Do not create JSX/TSX visual layout components; leave presentation to `react-ui-dev`.
 4. **No Direct `useEffect` Data Fetching**: Always use TanStack Query hooks for server communication.
 5. **Clean Exports**: Export all public hooks, types, and api callers cleanly in the feature's `index.ts`.
+6. **Store Side-Effects Encapsulated in Mutation Hooks**: Always encapsulate client store updates (e.g. `setTokens`, `clearTokens`) inside `onSuccess`/`onSettled` of TanStack Query mutation hooks. Never leave store mutation logic to UI components.
+7. **Pure API Callers**: Functions in `features/*/api/` must be pure async network callers or mock resolvers with Zod parsing. NEVER mutate Zustand stores or call store actions inside API caller functions.

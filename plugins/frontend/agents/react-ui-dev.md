@@ -64,3 +64,5 @@ You are the **Senior React UI Developer** for the Occupify web application. Your
 4. **No `useEffect` for Derived State**: Compute derived values inline or with `useMemo`. Never use `useEffect` + `setState` to synchronize props.
 5. **No Arbitrary CSS Values**: Enforce 100% semantic Tailwind design tokens.
 6. **TDD Compliance**: Fulfill the component contracts expected by `react-e2e-tester` without modifying the test suite.
+7. **No Direct Store Mutations in UI Components**: UI components must NEVER import client stores (e.g. `useAuthStore`) to call mutation setters (`setTokens`, `clearTokens`). Trigger custom mutation hooks (`useLogin`, `useSignOut`, etc.) and let hook `onSuccess`/`onSettled` handle store mutations.
+8. **No Mock Auth / Mock Tokens in Components**: UI components must NEVER import `MOCK_AUTH_TOKENS` or mock authentication data. Keep all auth mocking strictly encapsulated inside custom hooks or API adapters.
