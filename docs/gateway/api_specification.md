@@ -4,70 +4,187 @@ For business and system error codes, refer to [error_code.md](error_code.md).
 
 > [!NOTE]
 > **Base Port & System Entry Point:**
-> - External Gateway Port: `8180`
+> - External Gateway Port: `8180` (Single ingress entry point for all frontend and external clients)
 > - Downstream Services:
->   - Identity: `http://localhost:8181`
->   - Core: `http://localhost:8182`
+>   - Identity / Auth: `http://localhost:8181`
+>   - Core Marketplace: `http://localhost:8182`
 >   - Payment: `http://localhost:8183`
 >   - Notification: `http://localhost:8184`
 >   - Administration: `http://localhost:8185`
+> - Architecture: Spring Cloud Gateway (Spring Boot 3 / Project Reactor WebFlux)
+
+---
+
+## Standard Response Envelopes
+
+The Gateway adheres to and propagates standard Occupify response envelopes:
+
+### Single Data Response (`SingleResponse<T>`)
+```json
+{
+  "statusCode": 200,
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+```
+
+### Resource Created Response (`CreatedResponse<T>`)
+```json
+{
+  "statusCode": 201,
+  "message": "Resource created successfully",
+  "data": { ... }
+}
+```
+
+### Paginated Data Response (`PageResponse<T>`)
+```json
+{
+  "statusCode": 200,
+  "message": "Operation completed successfully",
+  "data": [ ... ],
+  "paging": {
+    "page": 0,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
+}
+```
+
+### Gateway Error & Fallback Response (`ErrorResponse`)
+```json
+{
+  "statusCode": 503,
+  "errorCode": "SYS_008",
+  "message": "Core marketplace service is temporarily unavailable. Please try again later."
+}
+```
 
 ---
 
 ## 1. Overview & Core Responsibilities
 
-The **Occupify API Gateway** (`occupify-gateway`) is built on **Spring Cloud Gateway (WebFlux)** and serves as the single public reverse-proxy and security gatekeeper for the platform.
-
-### Core Functions:
-1. **JWT Authentication & Validation:** Parses Bearer tokens from incoming `Authorization` headers using HMAC-SHA512 (`HS512`). Validates token signatures and expiration.
-2. **Context Propagation (Header Ingestion):** Injects downstream headers:
-   - `X-User-Id`: User UUID string
-   - `X-User-Role`: User role string (`USER` or `ADMIN`)
-   - `X-User-Email`: Authenticated user email
-3. **Correlation Tracking:** Generates and appends `X-Correlation-Id` across all requests and responses for end-to-end distributed tracing.
-4. **Resilience & Fault Tolerance:** Employs Resilience4j Circuit Breakers and Retry policies for all downstream HTTP calls. Requests failing or timing out are redirected to internal fallback endpoints.
-5. **Cross-Origin Resource Sharing (CORS):** Manages pre-flight `OPTIONS` requests and configures allowed origins (`http://localhost:3000`).
+The **Occupify API Gateway** (`occupify-gateway`) is the central reverse-proxy, authentication router, and edge resilience layer:
+1. **JWT Authentication & Validation:** Intercepts incoming requests, parses `Authorization: Bearer <token>`, validates HMAC-SHA512 (`HS512`) signatures and expiration, and denies unauthenticated access with `401 UNAUTHORIZED`.
+2. **Context Propagation & Spoofing Protection:**
+   - Strips any untrusted client-supplied identity headers (`X-User-Id`, `X-User-Email`, `X-User-Role`) on whitelisted endpoints.
+   - Decodes authenticated JWT claims and safely injects verified headers for downstream services:
+     - `X-User-Id`: Authenticated user UUID string
+     - `X-User-Email`: Authenticated user email
+     - `X-User-Role`: Authenticated user role (`USER` or `ADMIN`)
+3. **Correlation Tracking (`X-Correlation-Id`):** Automatically assigns or propagates an `X-Correlation-Id` across all requests and responses for end-to-end distributed tracing.
+4. **Resilience & Fault Tolerance:**
+   - Resilience4j Circuit Breakers prevent cascading failures across downstream services.
+   - Retry filters with exponential backoff on idempotent `GET` and `HEAD` operations.
+   - Seamless internal redirection to `/fallback/*` endpoints when downstream instances fail or time out.
+5. **Role-Based Routing Security:** Restricts administrative route patterns (`/admin/**`, `/audit-logs/**`, `/reports/**`) exclusively to tokens bearing `X-User-Role: ADMIN`. Rejects unauthorized roles with `403 FORBIDDEN` (`USER_007`).
 
 ---
 
-## 2. Gateway Fallback Endpoints (`/fallback/*`)
+## 2. Downstream Route Matrix
 
-When a downstream service instance crashes, becomes unresponsive, or trips its circuit breaker, the gateway catches the failure and returns a structured `ErrorResponse`.
+| Route ID | Path Predicates | Downstream Target | Retry Policy | Circuit Breaker |
+| :--- | :--- | :--- | :--- | :--- |
+| `auth-service` | `/auth/**`, `/account/**`, `/users/**`, `/user/**` | `http://localhost:8181` | Disabled (Auth mutations) | Gateway passthrough |
+| `core-service` | `/projects/**`, `/applications/**`, `/reviews/**`, `/bids/**` | `http://localhost:8182` | 3 retries (GET/HEAD, 100-1000ms) | `coreCircuitBreaker` |
+| `payment-service` | `/contracts/**`, `/wallets/**`, `/payments/**` | `http://localhost:8183` | 3 retries (GET/HEAD, 100-1000ms) | `paymentCircuitBreaker` |
+| `notification-service` | `/notifications/**` | `http://localhost:8184` | 3 retries (GET/HEAD, 100-1000ms) | `notificationCircuitBreaker` |
+| `administration-service`| `/admin/**`, `/audit-logs/**`, `/reports/**` | `http://localhost:8185` | 3 retries (GET/HEAD, 100-1000ms) | `adminCircuitBreaker` |
 
-### 2.1 Common Fallback
+---
+
+## 3. Path Authorization & Security Policies
+
+| Path Pattern | Access Policy | Required Header / Role | Behavior / Error Code |
+| :--- | :--- | :--- | :--- |
+| `/auth/**` | Public / Whitelisted | None | Client headers stripped, forwarded to Identity. |
+| `/actuator/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/scalar/**`, `/docs/**` | Whitelisted | None | Public API docs and health checks. |
+| `/fallback/**` | Internal Whitelist | None | Handled directly by Gateway Fallback Controller. |
+| `/user/institutions`, `/users/institutions` | Public / Whitelisted | None | Catalog lookup during onboarding. |
+| `/admin/**`, `/audit-logs/**`, `/reports/**` | Admin Restricted | `X-User-Role: ADMIN` | Returns `403 FORBIDDEN` (`USER_007`) if non-admin. |
+| All other paths (`/projects/**`, `/contracts/**`, `/wallets/**`, `/notifications/**`) | Authenticated | `Authorization: Bearer <jwt>` | Returns `401 UNAUTHORIZED` (`AUTH_003` or `AUTH_005`) if missing or invalid. |
+
+---
+
+## 4. Gateway Fallback Endpoints (`/fallback/*`)
+
+When a downstream service instance crashes, becomes unresponsive, or trips its Resilience4j circuit breaker, the request is internally routed to `GatewayFallbackController`.
+
+### 4.1 Common Fallback
 - **Endpoint:** `GET|POST|PUT|DELETE|PATCH /fallback/common`
-- **Trigger:** Generic fallback when downstream route fails.
-- **Response:** `503 SERVICE_UNAVAILABLE` (`SYS_008`) or `504 GATEWAY_TIMEOUT` (`SYS_009`).
+- **Description:** Default fallback handler for unspecified downstream services.
+- **HTTP Methods:** All methods supported.
 
-### 2.2 Service-Specific Fallback
+### 4.2 Service-Specific Fallbacks
 - **Endpoint:** `GET|POST|PUT|DELETE|PATCH /fallback/{service}`
-- **Supported Path Variables:** `core`, `payment`, `notification`, `administration`.
-- **Response Example (`503 SERVICE_UNAVAILABLE`):**
-  ```json
-  {
-    "statusCode": 503,
-    "message": "Core marketplace service is temporarily unavailable. Please try again later.",
-    "errorCode": "SYS_008"
-  }
-  ```
-- **Response Example (`504 GATEWAY_TIMEOUT`):**
-  ```json
-  {
-    "statusCode": 504,
-    "message": "Payment service request timed out. Please try again later.",
-    "errorCode": "SYS_009"
-  }
-  ```
+- **Supported Path Variables:** `core`, `payment`, `notification` (or `noti`), `administration` (or `admin`).
+- **HTTP Methods:** All methods supported.
+
+#### 4.2.1 Service Unavailable (`503 SERVICE_UNAVAILABLE`)
+Triggered when the circuit breaker is in `OPEN` state or downstream connection is refused.
+##### Response Headers
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+X-Correlation-Id: c9a4d8e2-1234-4567-89ab-cdef01234567
+```
+##### Response Body Example (`ErrorResponse`)
+```json
+{
+  "statusCode": 503,
+  "message": "Core marketplace service is temporarily unavailable. Please try again later.",
+  "errorCode": "SYS_008"
+}
+```
+
+#### 4.2.2 Gateway Timeout (`504 GATEWAY_TIMEOUT`)
+Triggered when downstream response exceeds `resilience4j.timelimiter.timeoutDuration` (5000ms).
+##### Response Headers
+```http
+HTTP/1.1 504 Gateway Timeout
+Content-Type: application/json
+X-Correlation-Id: c9a4d8e2-1234-4567-89ab-cdef01234567
+```
+##### Response Body Example (`ErrorResponse`)
+```json
+{
+  "statusCode": 504,
+  "message": "Payment service request timed out. Please try again later.",
+  "errorCode": "SYS_009"
+}
+```
 
 ---
 
-## 3. Path Authorization Policies
+## 5. Security Rejection Response Examples
 
-| Path Pattern | Security Rule | Required Role / Condition |
-| :--- | :--- | :--- |
-| `/auth/**` | Public / Whitelisted | No token required |
-| `/projects` (GET), `/projects/{id}` (GET) | Public / Whitelisted | No token required |
-| `/actuator/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/scalar/**` | Whitelisted | Monitoring / Documentation |
-| `/fallback/**` | Internal / Whitelisted | Internal Gateway fallback |
-| `/admin/**`, `/audit-logs/**`, `/reports/**` | Role Restricted | Must have `X-User-Role: ADMIN` |
-| All other paths (`/projects` POST/PUT/PATCH, `/users/**`, `/notifications/**`, `/contracts/**`) | Authenticated | Valid Bearer JWT token required |
+### 5.1 Missing Authorization Header (`401 UNAUTHORIZED`)
+Triggered when a protected path is invoked without `Authorization: Bearer <token>`.
+```json
+{
+  "statusCode": 401,
+  "message": "Missing or invalid Authorization header",
+  "errorCode": "AUTH_003"
+}
+```
+
+### 5.2 Invalid or Expired Token (`401 UNAUTHORIZED`)
+Triggered when the JWT signature is invalid, corrupted, or past expiration.
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid or expired JWT token",
+  "errorCode": "AUTH_005"
+}
+```
+
+### 5.3 Admin Privilege Required (`403 FORBIDDEN`)
+Triggered when an authenticated user with `X-User-Role: USER` attempts to access administrative routes (`/admin/**`, `/audit-logs/**`, `/reports/**`).
+```json
+{
+  "statusCode": 403,
+  "message": "Access denied: ADMIN role required",
+  "errorCode": "USER_007"
+}
+```

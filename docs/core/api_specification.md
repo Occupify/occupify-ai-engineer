@@ -3,178 +3,401 @@
 For business and system error codes, refer to [error_code.md](error_code.md).
 
 > [!NOTE]
-> **Local Authentication (`DEV_MOCK_AUTH_ENABLED=true`):**
-> Enabled by default when running locally to bypass Gateway headers using the following mock credentials:
-> - **User ID:** `00000000-0000-0000-0000-000000000001`
-> - **Role:** `USER`
-> - **Email:** `dev-employer@occupify.local`
-> 
-> *(Note: CI/CD and production environments disable this by setting `DEV_MOCK_AUTH_ENABLED=false`).*
+> **Base Port & Gateway Routing:**
+> - Direct Service Port: `8182` (Internal)
+> - Gateway Port: `8180` (External ingress entry point)
+> - Gateway Routes: `/projects/**`, `/applications/**`, `/reviews/**`, `/bids/**`
+> - Database Port: PostgreSQL `5531` (`occupify_core`), RabbitMQ `5672`
 
 ---
 
-## 1. Create Project
-**Endpoint:** `POST /projects`  
-**Description:** Creates a new project owned by the authenticated user.  
-**Authorization:** Authorized for users (not permitted for admins).
+## Standard Response Envelopes
 
-### Parameters
+Every API endpoint returns a standardized response envelope:
 
-#### Headers
-| Name | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | String | Conditional | `Bearer <JWT>` (when calling directly via Swagger) |
-| `X-User-Id` | UUID | Conditional | User UUID (injected automatically by Gateway) |
-| `X-User-Role` | String | Optional | User role (strictly `USER` or `ADMIN`) |
-| `X-User-Email` | String | Optional | User email address |
+### Single Data Response (`SingleResponse<T>`)
+```json
+{
+  "statusCode": 200,
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+```
 
-#### Request Body (`application/json`)
+### Resource Created Response (`CreatedResponse<T>`)
+```json
+{
+  "statusCode": 201,
+  "message": "Resource created successfully",
+  "data": { ... }
+}
+```
+
+### Paginated Data Response (`PageResponse<T>`)
+```json
+{
+  "statusCode": 200,
+  "message": "Operation completed successfully",
+  "data": [ ... ],
+  "paging": {
+    "page": 0,
+    "limit": 20,
+    "total": 128,
+    "totalPages": 7
+  }
+}
+```
+
+### Generic Action Success Response (`SuccessResponse`)
+```json
+{
+  "statusCode": 200,
+  "message": "Action completed successfully"
+}
+```
+
+### Error Response (`ErrorResponse`)
+```json
+{
+  "statusCode": 404,
+  "errorCode": "CORE_001",
+  "message": "Project not found",
+  "timestamp": "2026-10-18T22:30:00Z"
+}
+```
+
+---
+
+## 1. Project Management (`/projects`)
+
+### 1.1 Create Project
+- **Endpoint:** `POST /projects`
+- **Description:** Creates a new project owned by the authenticated employer. Emits `project.created` event to RabbitMQ.
+- **Authorization:** Authenticated (`X-User-Role: USER` / Employer)
+- **Headers:** `Content-Type: application/json`, `Authorization: Bearer <token>` or `X-User-Id`
+
+#### Request Body
 | Field | Type | Required | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `title` | String | Yes | Max 255 chars, not blank | Project title |
-| `description` | String | No | Max 5000 chars | Project description |
-| `startPrice` | BigDecimal | No | Must be > 0 | Starting budget / price |
-| `period` | String (Enum) | Yes | `FIXED`, `HOURLY`, `MONTHLY` | Payment / timeline period |
-| `dueDate` | String (Date) | No | Present or future (`YYYY-MM-DD`) | Deadline for project delivery |
-| `experienceLevel` | String (Enum) | No | `ENTRY`, `INTERMEDIATE`, `EXPERT` | Desired freelancer experience |
+| `description` | String | No | Max 5000 chars | Detailed project specification |
+| `startPrice` | BigDecimal | No | Must be $> 0$ | Starting budget / price |
+| `period` | String (Enum) | Yes | `FIXED`, `HOURLY`, `MONTHLY` | Payment / delivery timeline |
+| `dueDate` | String (Date) | No | Present or future (`YYYY-MM-DD`) | Completion deadline |
+| `experienceLevel`| String (Enum) | No | `ENTRY`, `INTERMEDIATE`, `EXPERT` | Desired freelancer experience |
+| `skillIds` | Array[UUID] | No | Valid skill UUIDs | Required technical skills |
 
-#### Response Data (`ProjectResponse`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | UUID | Project ID |
-| `title` | String | Project title |
-| `description` | String | Project description |
-| `startPrice` | BigDecimal | Starting price |
-| `period` | String (Enum) | `FIXED`, `HOURLY`, `MONTHLY` |
-| `dueDate` | String (Date) | Deadline date |
-| `experienceLevel` | String (Enum) | `ENTRY`, `INTERMEDIATE`, `EXPERT` |
-| `status` | String (Enum) | Project status (`OPEN`) |
-| `closedAt` | String (DateTime) | Timestamp when project was closed (null on create) |
-| `employer` | Object | Employer summary (`id`, `email`, nullable `fullName`, nullable `avatarUrl`) |
-| `createdAt` | String (DateTime) | Creation timestamp |
-| `updatedAt` | String (DateTime) | Last update timestamp |
+#### Request Body Example
+```json
+{
+  "title": "Build Distributed Notification Microservice with Spring Boot 3",
+  "description": "Looking for an experienced backend engineer to architect and implement an event-driven notification service with RabbitMQ, SMTP retry, and SSE stream.",
+  "startPrice": 1500.00,
+  "period": "FIXED",
+  "dueDate": "2026-12-15",
+  "experienceLevel": "EXPERT",
+  "skillIds": [
+    "44444444-5555-6666-7777-888888888888",
+    "55555555-6666-7777-8888-999999999999"
+  ]
+}
+```
+
+#### Response Example (`201 CREATED`)
+```json
+{
+  "statusCode": 201,
+  "message": "Project created successfully",
+  "data": {
+    "id": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+    "title": "Build Distributed Notification Microservice with Spring Boot 3",
+    "description": "Looking for an experienced backend engineer to architect and implement an event-driven notification service with RabbitMQ, SMTP retry, and SSE stream.",
+    "startPrice": 1500.00,
+    "period": "FIXED",
+    "dueDate": "2026-12-15",
+    "experienceLevel": "EXPERT",
+    "status": "OPEN",
+    "closedAt": null,
+    "employer": {
+      "id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+      "email": "employer@techcorp.com",
+      "fullName": "TechCorp Global",
+      "avatarUrl": "https://storage.occupify.work/avatars/techcorp.png"
+    },
+    "createdAt": "2026-10-18T22:30:00Z",
+    "updatedAt": "2026-10-18T22:30:00Z"
+  }
+}
+```
 
 ---
 
-## 2. Get Paginated Projects
-**Endpoint:** `GET /projects`  
-**Description:** Retrieves a paginated and filtered list of projects.  
-**Authorization:** Public (No authentication required).
-
-### Parameters
+### 1.2 Get Paginated Projects
+- **Endpoint:** `GET /projects`
+- **Description:** Retrieves a paginated and filtered list of open projects for public discovery.
+- **Authorization:** Public
 
 #### Query Parameters
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `keyword` | String | No | - | Case-insensitive search on title and description |
-| `status` | String (Enum) | No | - | Filter by status: `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
+| `keyword` | String | No | - | Substring search on title and description |
+| `status` | String (Enum) | No | `OPEN` | `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
 | `employerId` | UUID | No | - | Filter by employer UUID |
-| `period` | String (Enum) | No | - | Filter by period: `FIXED`, `HOURLY`, `MONTHLY` |
-| `experienceLevel` | String (Enum) | No | - | Filter by level: `ENTRY`, `INTERMEDIATE`, `EXPERT` |
-| `minPrice` | BigDecimal | No | - | Minimum starting price |
-| `maxPrice` | BigDecimal | No | - | Maximum starting price |
-| `page` | Integer | No | `0` | Zero-based page index (must be >= 0) |
-| `size` | Integer | No | `20` | Page size (must be >= 1) |
-| `sort` | String | No | `createdAt,desc` | Sorting criteria (`field,asc\|desc`) |
+| `period` | String (Enum) | No | - | `FIXED`, `HOURLY`, `MONTHLY` |
+| `experienceLevel`| String (Enum) | No | - | `ENTRY`, `INTERMEDIATE`, `EXPERT` |
+| `minPrice` | BigDecimal | No | - | Minimum budget filter |
+| `maxPrice` | BigDecimal | No | - | Maximum budget filter |
+| `page` | Integer | No | `0` | Zero-based page index |
+| `limit` | Integer | No | `20` | Page size |
+| `sort` | String | No | `createdAt,desc` | Sort field and direction (`field,asc\|desc`) |
 
-#### Response Data (`Page<ProjectResponse>`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `items` | Array[`ProjectResponse`] | List of projects on the current page |
-| `pageNumber` | Integer | Current page index |
-| `pageSize` | Integer | Requested page size |
-| `totalElements` | Long | Total number of matched projects |
-| `totalPages` | Integer | Total pages available |
-| `isFirst` | Boolean | True if first page |
-| `isLast` | Boolean | True if last page |
-
----
-
-## 3. Get Project Details
-**Endpoint:** `GET /projects/{id}`  
-**Description:** Retrieves full details of a specific project, including associated jobs and skills.  
-**Authorization:** Public (No authentication required).
-
-### Parameters
-
-#### Path Parameters
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | Yes | Unique identifier of the project |
-
-#### Response Data (`ProjectDetailResponse`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | UUID | Project ID |
-| `title` | String | Project title |
-| `description` | String | Project description |
-| `startPrice` | BigDecimal | Starting price |
-| `period` | String (Enum) | `FIXED`, `HOURLY`, `MONTHLY` |
-| `dueDate` | String (Date) | Deadline date |
-| `experienceLevel` | String (Enum) | `ENTRY`, `INTERMEDIATE`, `EXPERT` |
-| `status` | String (Enum) | Project status |
-| `closedAt` | String (DateTime) | Timestamp when project was closed |
-| `employer` | Object | Employer summary (`id`, `email`, nullable `fullName`, nullable `avatarUrl`) |
-| `jobs` | Array[`JobSummaryResponse`] | List of jobs with skills (`id`, `title`, `description`, `budget`, `headcount`, `skills`) |
-| `createdAt` | String (DateTime) | Creation timestamp |
-| `updatedAt` | String (DateTime) | Last update timestamp |
+#### Response Example (`200 OK`)
+```json
+{
+  "statusCode": 200,
+  "message": "Projects retrieved successfully",
+  "data": [
+    {
+      "id": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+      "title": "Build Distributed Notification Microservice with Spring Boot 3",
+      "description": "Looking for an experienced backend engineer...",
+      "startPrice": 1500.00,
+      "period": "FIXED",
+      "dueDate": "2026-12-15",
+      "experienceLevel": "EXPERT",
+      "status": "OPEN",
+      "employer": {
+        "id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+        "email": "employer@techcorp.com",
+        "fullName": "TechCorp Global"
+      },
+      "createdAt": "2026-10-18T22:30:00Z"
+    }
+  ],
+  "paging": {
+    "page": 0,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
 
 ---
 
-## 4. Update Project
-**Endpoint:** `PUT /projects/{id}`  
-**Description:** Updates project details.  
-**Authorization:** Authorized for users (only permitted by the project owner user; admins not permitted).
+### 1.3 Get Project Details
+- **Endpoint:** `GET /projects/{id}`
+- **Description:** Retrieves full project details, including required jobs, skills, and owner profile.
+- **Authorization:** Public
+- **Path Parameter:** `id` (UUID of project)
 
-### Parameters
+#### Response Example (`200 OK`)
+```json
+{
+  "statusCode": 200,
+  "message": "Project detail retrieved successfully",
+  "data": {
+    "id": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+    "title": "Build Distributed Notification Microservice with Spring Boot 3",
+    "description": "Looking for an experienced backend engineer...",
+    "startPrice": 1500.00,
+    "period": "FIXED",
+    "dueDate": "2026-12-15",
+    "experienceLevel": "EXPERT",
+    "status": "OPEN",
+    "closedAt": null,
+    "employer": {
+      "id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+      "email": "employer@techcorp.com",
+      "fullName": "TechCorp Global",
+      "avatarUrl": "https://storage.occupify.work/avatars/techcorp.png"
+    },
+    "jobs": [
+      {
+        "id": "88888888-9999-aaaa-bbbb-cccccccccccc",
+        "title": "Spring Boot AMQP Specialist",
+        "description": "Implement RabbitMQ consumers with DLQ and Retry.",
+        "budget": 1500.00,
+        "headcount": 1,
+        "skills": [
+          { "id": "44444444-5555-6666-7777-888888888888", "name": "Java" },
+          { "id": "55555555-6666-7777-8888-999999999999", "name": "Spring Boot" }
+        ]
+      }
+    ],
+    "createdAt": "2026-10-18T22:30:00Z",
+    "updatedAt": "2026-10-18T22:30:00Z"
+  }
+}
+```
 
-#### Headers
-| Name | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | String | Conditional | `Bearer <JWT>` |
-| `X-User-Id` | UUID | Conditional | User UUID (injected by Gateway) |
-| `X-User-Role` | String | Optional | User role |
-| `X-User-Email` | String | Optional | User email |
+---
 
-#### Path Parameters
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | Yes | Unique identifier of the project to update |
+### 1.4 Update Project
+- **Endpoint:** `PUT /projects/{id}`
+- **Description:** Updates project specification. Permitted exclusively by the project owner.
+- **Authorization:** Authenticated (Project Owner)
+- **Path Parameter:** `id` (UUID of project)
 
-#### Request Body (`application/json`)
+#### Request Body Example
+```json
+{
+  "title": "Build Distributed Notification Microservice (Spring Boot 3 + RabbitMQ)",
+  "description": "Updated project description with expanded scope for SSE stream.",
+  "startPrice": 1800.00,
+  "period": "FIXED",
+  "dueDate": "2026-12-30",
+  "experienceLevel": "EXPERT"
+}
+```
+
+#### Response Example (`200 OK`)
+```json
+{
+  "statusCode": 200,
+  "message": "Project updated successfully",
+  "data": {
+    "id": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+    "title": "Build Distributed Notification Microservice (Spring Boot 3 + RabbitMQ)",
+    "startPrice": 1800.00,
+    "status": "OPEN",
+    "updatedAt": "2026-10-18T23:00:00Z"
+  }
+}
+```
+
+---
+
+### 1.5 Close Project
+- **Endpoint:** `PATCH /projects/{id}/close`
+- **Description:** Sets project status to `COMPLETED`, records `closedAt`, and emits `project.closed` event.
+- **Authorization:** Authenticated (Project Owner or Admin)
+- **Path Parameter:** `id` (UUID of project)
+
+#### Response Example (`200 OK`)
+```json
+{
+  "statusCode": 200,
+  "message": "Project closed successfully",
+  "data": {
+    "id": "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+    "status": "COMPLETED",
+    "closedAt": "2026-10-18T23:15:00Z"
+  }
+}
+```
+
+---
+
+## 2. Applications & Bids (`/applications`, `/bids`)
+
+### 2.1 Submit Project Bid / Proposal
+- **Endpoint:** `POST /applications` or `POST /bids`
+- **Description:** Submits a freelancer proposal for an open project job.
+- **Authorization:** Authenticated (Freelancer)
+
+#### Request Body
 | Field | Type | Required | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `title` | String | No | Max 255 chars | Updated title |
-| `description` | String | No | Max 5000 chars | Updated description |
-| `startPrice` | BigDecimal | No | Must be > 0 | Updated starting budget |
-| `period` | String (Enum) | No | `FIXED`, `HOURLY`, `MONTHLY` | Updated period |
-| `dueDate` | String (Date) | No | Present or future (`YYYY-MM-DD`) | Updated deadline |
-| `experienceLevel` | String (Enum) | No | `ENTRY`, `INTERMEDIATE`, `EXPERT` | Updated experience level |
+| `jobId` | UUID | Yes | Must belong to an OPEN project | Targeted job listing |
+| `bidAmount` | BigDecimal | Yes | Must be $> 0$ | Proposed cost / rate |
+| `coverLetter`| String | Yes | Max 2000 chars, not blank | Pitch to hiring employer |
+| `estimatedDays` | Integer | Yes | Must be $> 0$ | Estimated delivery time in days |
 
-#### Response Data (`ProjectResponse`)
-Returns updated `ProjectResponse` object.
+#### Request Body Example
+```json
+{
+  "jobId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+  "bidAmount": 1400.00,
+  "coverLetter": "Hello! I have over 5 years experience with Spring Boot, AMQP, and Resilience4j. I can deliver this service with 100% test coverage in 10 days.",
+  "estimatedDays": 10
+}
+```
+
+#### Response Example (`201 CREATED`)
+```json
+{
+  "statusCode": 201,
+  "message": "Proposal submitted successfully",
+  "data": {
+    "id": "99999999-aaaa-bbbb-cccc-dddddddddddd",
+    "jobId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+    "freelancerId": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "bidAmount": 1400.00,
+    "status": "SUBMITTED",
+    "estimatedDays": 10,
+    "createdAt": "2026-10-18T23:20:00Z"
+  }
+}
+```
 
 ---
 
-## 5. Close Project
-**Endpoint:** `PATCH /projects/{id}/close`  
-**Description:** Closes a project (sets status to `COMPLETED`, records `closedAt`, and emits RabbitMQ `project.closed` event).  
-**Authorization:** Allowed by users (project owner) and admins.
+### 2.2 Accept Proposal & Initiate Contract
+- **Endpoint:** `PATCH /applications/{id}/accept`
+- **Description:** Employer accepts a freelancer proposal, advancing status to `ACCEPTED` and triggering contract creation in `occupify-payment`.
+- **Authorization:** Authenticated (Project Owner)
+- **Path Parameter:** `id` (UUID of application/bid)
 
-### Parameters
+#### Response Example (`200 OK`)
+```json
+{
+  "statusCode": 200,
+  "message": "Proposal accepted successfully. Contract generation initiated."
+}
+```
 
-#### Headers
-| Name | Type | Required | Description |
+---
+
+## 3. Reviews & Ratings (`/reviews`)
+
+### 3.1 Submit Review
+- **Endpoint:** `POST /reviews`
+- **Description:** Submits feedback and 1-to-5 star rating upon contract completion.
+- **Authorization:** Authenticated (Contract Participant)
+
+#### Request Body
+| Field | Type | Required | Constraints | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `contractId` | UUID | Yes | Completed contract UUID | Associated contract |
+| `rating` | Integer | Yes | Between 1 and 5 | Rating score |
+| `comment` | String | No | Max 1000 chars | Review comment |
+
+#### Request Body Example
+```json
+{
+  "contractId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "rating": 5,
+  "comment": "Outstanding engineer! Delivered high-quality code with excellent communication."
+}
+```
+
+#### Response Example (`201 CREATED`)
+```json
+{
+  "statusCode": 201,
+  "message": "Review submitted successfully",
+  "data": {
+    "id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+    "rating": 5,
+    "comment": "Outstanding engineer! Delivered high-quality code with excellent communication.",
+    "createdAt": "2026-10-18T23:25:00Z"
+  }
+}
+```
+
+---
+
+## 4. Asynchronous Event Contracts (RabbitMQ)
+
+### Published Events
+| Event | Exchange | Routing Key | Description |
 | :--- | :--- | :--- | :--- |
-| `Authorization` | String | Conditional | `Bearer <JWT>` |
-| `X-User-Id` | UUID | Conditional | User UUID (injected by Gateway) |
-| `X-User-Role` | String | Optional | User role |
-| `X-User-Email` | String | Optional | User email |
+| `ProjectCreatedEvent` | `occupify.notification.exchange` | `project.created` | Emitted when a new project is created to alert matching candidates. |
+| `ProjectClosedEvent` | `occupify.notification.exchange` | `project.closed` | Emitted when a project is closed to notify active bidders. |
 
-#### Path Parameters
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | Yes | Unique identifier of the project to close |
-
-#### Response Data (`ProjectResponse`)
-Returns updated `ProjectResponse` object with `status = "COMPLETED"` and populated `closedAt`.
+### Consumed Events
+| Event | Exchange | Routing Key | Queue | Action |
+| :--- | :--- | :--- | :--- | :--- |
+| `UserRegisteredEvent` | `occupify.notification.exchange` | `user.registered` | `occupify.core.user.queue` | Pre-provisions local `User` mirror entity. |
+| `UserActivatedEvent` | `occupify.user.exchange` | `user.activated` | `occupify.core.user.queue` | Activates local user status to `ACTIVE`. |

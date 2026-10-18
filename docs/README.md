@@ -24,7 +24,7 @@ All external traffic from clients and web applications enters exclusively throug
 
 | Route ID | Predicate Path | Downstream Target Service | Default Upstream URL | Resilience4j Circuit Breaker |
 | :--- | :--- | :--- | :--- | :--- |
-| `auth-service` | `/auth/**`, `/account/**` | `occupify-identity` | `http://localhost:8181` | Direct pass-through |
+| `auth-service` | `/auth/**`, `/account/**`, `/users/**`, `/user/**` | `occupify-identity` | `http://localhost:8181` | Direct pass-through |
 | `core-service` | `/projects/**`, `/applications/**`, `/reviews/**`, `/bids/**` | `occupify-core` | `http://localhost:8182` | `coreCircuitBreaker` (`forward:/fallback/core`) |
 | `payment-service` | `/contracts/**`, `/wallets/**`, `/payments/**` | `occupify-payment` | `http://localhost:8183` | `paymentCircuitBreaker` (`forward:/fallback/payment`) |
 | `notification-service` | `/notifications/**` | `occupify-noti` | `http://localhost:8184` | `notificationCircuitBreaker` (`forward:/fallback/notification`) |
