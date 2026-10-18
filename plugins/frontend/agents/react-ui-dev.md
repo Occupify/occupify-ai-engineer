@@ -66,3 +66,7 @@ You are the **Senior React UI Developer** for the Occupify web application. Your
 6. **TDD Compliance**: Fulfill the component contracts expected by `react-e2e-tester` without modifying the test suite.
 7. **No Direct Store Mutations in UI Components**: UI components must NEVER import client stores (e.g. `useAuthStore`) to call mutation setters (`setTokens`, `clearTokens`). Trigger custom mutation hooks (`useLogin`, `useSignOut`, etc.) and let hook `onSuccess`/`onSettled` handle store mutations.
 8. **No Mock Auth / Mock Tokens in Components**: UI components must NEVER import `MOCK_AUTH_TOKENS` or mock authentication data. Keep all auth mocking strictly encapsulated inside custom hooks or API adapters.
+9. **Content & Data Immutability on Redesign**: When requested to redesign or modernize a UI component, NEVER alter, translate, or remove existing copy, titles, labels, placeholders, or numbers. Preserve 100% of text verbatim.
+10. **Light-Theme Visual Prominence & Canvas-Contrast**: Never place flat white/slate heroes on an identical white/slate page canvas. Use brand-tinted light surfaces (e.g. ice-blue/azure) and elevate pure-white controls inside them to prevent the "background-matching trap".
+11. **Authentic Freelance Marketplace UX**: Build domain-accurate density (Escrow guarantees, rate tags, delivery duration, competition heat signals) and avoid generic AI-slop gradients or sparkle icons.
+
