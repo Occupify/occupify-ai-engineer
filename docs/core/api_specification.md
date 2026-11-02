@@ -390,14 +390,36 @@ Every API endpoint returns a standardized response envelope:
 
 ## 4. Asynchronous Event Contracts (RabbitMQ)
 
-### Published Events
+### Published Domain Events (`occupify.core.exchange`)
+Transactional domain events emitted after database commit to synchronize downstream search and AI indexing:
+
+| Event Record | Exchange | Routing Key | Description | Payload Attributes |
+| :--- | :--- | :--- | :--- | :--- |
+| `ProjectCreatedDomainEvent` | `occupify.core.exchange` | `project.created` | Emitted when a project is created. | `eventId`, `projectId`, `version`, `occurredAt` |
+| `ProjectUpdatedDomainEvent` | `occupify.core.exchange` | `project.updated` | Emitted when project details/jobs are updated. | `eventId`, `projectId`, `version`, `occurredAt` |
+| `ProjectClosedDomainEvent` | `occupify.core.exchange` | `project.closed` | Emitted when project is closed or cancelled. | `eventId`, `projectId`, `version`, `occurredAt` |
+| `JobStatusChangedDomainEvent` | `occupify.core.exchange` | `job.status.changed` | Emitted when a job position changes state (e.g. to `FILLED`). | `eventId`, `projectId`, `jobId`, `jobVersion`, `oldStatus`, `newStatus`, `occurredAt` |
+
+### Published Notification Events (`occupify.notification.exchange`)
 | Event | Exchange | Routing Key | Description |
 | :--- | :--- | :--- | :--- |
-| `ProjectCreatedEvent` | `occupify.notification.exchange` | `project.created` | Emitted when a new project is created to alert matching candidates. |
-| `ProjectClosedEvent` | `occupify.notification.exchange` | `project.closed` | Emitted when a project is closed to notify active bidders. |
+| `ProjectCreatedEvent` | `occupify.notification.exchange` | `project.created` | Emitted to trigger candidate notification emails in `occupify-noti`. |
+| `ProjectClosedEvent` | `occupify.notification.exchange` | `project.closed` | Emitted to notify active bidders of project closure. |
 
 ### Consumed Events
 | Event | Exchange | Routing Key | Queue | Action |
 | :--- | :--- | :--- | :--- | :--- |
 | `UserRegisteredEvent` | `occupify.notification.exchange` | `user.registered` | `occupify.core.user.queue` | Pre-provisions local `User` mirror entity. |
 | `UserActivatedEvent` | `occupify.user.exchange` | `user.activated` | `occupify.core.user.queue` | Activates local user status to `ACTIVE`. |
+
+---
+
+## 5. Agent RPC Interface (`occupify.agent.rpc`)
+
+Occupify Core exposes synchronous Request-Reply RPC over RabbitMQ direct exchange `occupify.agent.rpc` for downstream consumption by `occupify-agentic`:
+
+| Routing Key | Queue | Request DTO | Response Envelope | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `core.project.search` | `occupify.core.rpc.project.search` | `ProjectSearchRequest` | `PageResponse<AgentProjectResponse>` | Supports keyword searching, salary range, pagination, and sorting for AI job matchers. |
+| `core.project.get` | `occupify.core.rpc.project.get` | `ProjectGetRequest` | `SingleResponse<AgentProjectResponse>` | Returns complete project entity with jobs, required skills, and salary constraints without employer PII. |
+

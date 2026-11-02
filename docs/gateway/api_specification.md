@@ -11,6 +11,7 @@ For business and system error codes, refer to [error_code.md](error_code.md).
 >   - Payment: `http://localhost:8183`
 >   - Notification: `http://localhost:8184`
 >   - Administration: `http://localhost:8185`
+>   - AI Agentic (Job Match & Chat): `http://localhost:8186`
 > - Architecture: Spring Cloud Gateway (Spring Boot 3 / Project Reactor WebFlux)
 
 ---
@@ -91,6 +92,7 @@ The **Occupify API Gateway** (`occupify-gateway`) is the central reverse-proxy, 
 | `payment-service` | `/contracts/**`, `/wallets/**`, `/payments/**` | `http://localhost:8183` | 3 retries (GET/HEAD, 100-1000ms) | `paymentCircuitBreaker` |
 | `notification-service` | `/notifications/**` | `http://localhost:8184` | 3 retries (GET/HEAD, 100-1000ms) | `notificationCircuitBreaker` |
 | `administration-service`| `/admin/**`, `/audit-logs/**`, `/reports/**` | `http://localhost:8185` | 3 retries (GET/HEAD, 100-1000ms) | `adminCircuitBreaker` |
+| `ai-service` | `/ai/**` | `http://localhost:8186` | Disabled (Streaming requests) | Direct passthrough (No short timeout) |
 
 ---
 
@@ -103,6 +105,7 @@ The **Occupify API Gateway** (`occupify-gateway`) is the central reverse-proxy, 
 | `/fallback/**` | Internal Whitelist | None | Handled directly by Gateway Fallback Controller. |
 | `/user/institutions`, `/users/institutions` | Public / Whitelisted | None | Catalog lookup during onboarding. |
 | `/admin/**`, `/audit-logs/**`, `/reports/**` | Admin Restricted | `X-User-Role: ADMIN` | Returns `403 FORBIDDEN` (`USER_007`) if non-admin. |
+| `/ai/**` | Authenticated | `Authorization: Bearer <jwt>` | Injects `X-User-Id`, `X-User-Role`, `X-User-Email`, streams SSE without timeout. |
 | All other paths (`/projects/**`, `/contracts/**`, `/wallets/**`, `/notifications/**`) | Authenticated | `Authorization: Bearer <jwt>` | Returns `401 UNAUTHORIZED` (`AUTH_003` or `AUTH_005`) if missing or invalid. |
 
 ---
